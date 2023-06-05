@@ -648,7 +648,7 @@ class MPMSolver:
                              point,
                              normal,
                              surface=surface_slip,
-                             friction=0.5):
+                             friction=0.4):
         point = list(point)
         # Normalize normal
         normal_scale = 1.0 / math.sqrt(sum(x**2 for x in normal))
@@ -757,7 +757,7 @@ class MPMSolver:
             print(f'needed substeps: {substeps}')
 
         while frame_time_left > 0:
-            print('.', end='', flush=True)
+            # print('.', end='', flush=True)
             self.total_substeps += 1
             if self.use_adaptive_dt:
                 if self.use_g2p2g:
@@ -804,7 +804,7 @@ class MPMSolver:
             self.all_time_max_velocity = max(self.all_time_max_velocity,
                                              cur_frame_velocity)
 
-        print()
+        # print()
 
         if print_stat:
             ti.profiler.print_kernel_profiler_info()
