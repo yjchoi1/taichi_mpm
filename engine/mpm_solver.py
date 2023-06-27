@@ -3,8 +3,12 @@ import numpy as np
 import time
 import numbers
 import math
+import json
 import multiprocessing as mp
 
+f = open('inputs.json')
+INPUTS = json.load(f)
+f.close()
 USE_IN_BLENDER = False
 
 
@@ -198,14 +202,14 @@ class MPMSolver:
         self.padding = padding
 
         # Young's modulus and Poisson's ratio
-        self.E, self.nu = 2e6, 0.3 # 1e6 * size * E_scale, 0.2
+        self.E, self.nu = INPUTS["elastic_modulus"], INPUTS["poisson_ratio"]
         # Lame parameters
         self.mu_0, self.lambda_0 = self.E / (
             2 * (1 + self.nu)), self.E * self.nu / ((1 + self.nu) *
                                                     (1 - 2 * self.nu))
 
         # Sand parameters
-        friction_angle = math.radians(30)
+        friction_angle = math.radians(INPUTS["friction_angle"])
         sin_phi = math.sin(friction_angle)
         self.alpha = math.sqrt(2 / 3) * 2 * sin_phi / (3 - sin_phi)
 
@@ -648,7 +652,7 @@ class MPMSolver:
                              point,
                              normal,
                              surface=surface_slip,
-                             friction=0.37):
+                             friction=INPUTS["wall_friction"]):
         point = list(point)
         # Normalize normal
         normal_scale = 1.0 / math.sqrt(sum(x**2 for x in normal))

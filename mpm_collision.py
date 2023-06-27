@@ -1,4 +1,5 @@
 import numpy as np
+import json
 import os
 import json
 import taichi as ti
@@ -7,47 +8,73 @@ import utils
 from tqdm import tqdm
 from engine.mpm_solver import MPMSolver
 
-def run_collision(i):
-    # inputs
-    domain_size = 1.0
-    ncubes_min, ncubes_max = 2, 3
-    min_distance = 0.01
-    cube_size_range=(0.3, 0.35)
-    vel_max, vel_min = -3.0, 3.0
-    sim_space = [[0.2, 0.8], [0.2, 0.8], [0.2, 0.8]]
-    cube_gen_space = [[0.21, 0.79], [0.21, 0.79], [0.21, 0.79]]
+def run_collision(i, inputs):
+
+    # inputs about general simulation information
+    domain_size = inputs["domain_size"]
+    sim_space = inputs["sim_space"]
+    sim_resolution = inputs["sim_resolution"]
     # because of the memory issue in GNS, the following resolution recommended.
     # limit of # particles are hard-coded based on this resolution
-    sim_resolution = (32, 32, 32)
-    nparticel_per_vol = 262152
-    nparticle_limits = 20000
-    # visualization
-    is_realtime_vis = True
+    nparticel_per_vol = inputs["nparticel_per_vol"]  # 64*64*64/m^3
+    nsteps = inputs["nsteps"]
+    mpm_dt = inputs["mpm_dt"]
+    gravity = inputs["gravity"]
+    # visualization & simulation inputs
+    is_realtime_vis = inputs["is_realtime_vis"]
+    save_path = inputs["save_path"]
+
+    # init visualizer
     if is_realtime_vis:
         gui = ti.GUI('MPM3D', res=512, background_color=0x112F41)
-    save_path = "./results/"
-    # simulation
-    nsteps = 350
-    mpm_dt = 0.0025
-    gravity = -9.81
 
-
+    # init MPM solver
     ti.init(arch=ti.cuda)
     mpm = MPMSolver(res=sim_resolution, size=domain_size)
 
-    # gen cubes
-    cubes = utils.generate_cubes(2, space_size=sim_space, cube_size_range=(0.2, 0.4))
+    if inputs["gen_cube_from_data"]["generate"] == inputs["gen_cube_randomly"]["generate"]:
+        raise NotImplemented(
+            "Cube generation method should either be one of `gen_cube_from_data` or `gen_cube_randomly`")
 
-    velocity_for_cubes = []
+    # Gen cubes from data
+    if inputs["gen_cube_from_data"]["generate"]:
+        cube_data = inputs["gen_cube_from_data"]["cube_data"]  # list containing cubes for each sim id
+        if len(cube_data) != len(range(inputs["id_range"][0], inputs["id_range"][1])):
+            raise NotImplemented(f"Enough length of cube_data should be provided to match id_range")
+        cubes = cube_data[i]["cubes"]
+        velocity_for_cubes = cube_data[i]["velocity_for_cubes"]
+
+    # Random cube generation
+    if inputs["gen_cube_randomly"]["generate"]:
+        rand_gen_inputs = inputs["gen_cube_randomly"]
+        ncubes = rand_gen_inputs["ncubes"]
+        min_distance_between_cubes = rand_gen_inputs["min_distance_between_cubes"]
+        cube_size_range = rand_gen_inputs["cube_size_range"]
+        vel_range = rand_gen_inputs["vel_range"]
+        cube_gen_space = rand_gen_inputs["cube_gen_space"]
+        nparticle_limits = rand_gen_inputs["nparticle_limits"]
+
+        # make cubes
+        cubes = utils.generate_cubes(
+            n=random.randint(ncubes[0], ncubes[1]),
+            space_size=cube_gen_space,
+            cube_size_range=cube_size_range,
+            min_distance_between_cubes=min_distance_between_cubes,
+            density=nparticel_per_vol,
+            max_particles=nparticle_limits)
+        # assign velocity for each cube
+        velocity_for_cubes = []
+        for _ in cubes:
+            velocity = [random.uniform(vel_range[0], vel_range[1]) for _ in range(len(sim_space))]
+            velocity_for_cubes.append(velocity)
+
     nparticles = int(0)
-    for cube in cubes:
-        velocity = [random.uniform(vel_min, vel_max) for _ in range(len(sim_space))]
-        velocity_for_cubes.append(velocity)
+    for idx, cube in enumerate(cubes):
         mpm.add_cube(
             lower_corner=[cube[0], cube[1], cube[2]],
             cube_size=[cube[3], cube[4], cube[5]],
             material=MPMSolver.material_sand,
-            velocity=velocity)
+            velocity=velocity_for_cubes[idx])
         nparticles_per_cube = (cube[3] * cube[4] * cube[5]) * nparticel_per_vol
         nparticles += nparticles_per_cube
 
@@ -60,7 +87,7 @@ def run_collision(i):
     mpm.set_gravity((0, gravity, 0))
 
     # run simulation
-    print(f"Running simulation {i}/{n_trajectories}...")
+    print(f"Running simulation {i} between {inputs['id_range'][0]} from {inputs['id_range'][1]}...")
     positions = []
     for frame in tqdm(range(nsteps)):
         mpm.step(mpm_dt)
@@ -91,31 +118,27 @@ def run_collision(i):
     print(f"Output written to: {save_path}/trajectory{i}")
 
     # gen animation and save
-    utils.animation_from_npz(path=save_path,
-                             npz_name=f"trajectory{i}",
-                             save_name=f"trajectory{i}",
-                             boundaries=sim_space,
-                             timestep_stride=3)
+    if inputs["is_save_animation"]:
+        utils.animation_from_npz(path=save_path,
+                                 npz_name=f"trajectory{i}",
+                                 save_name=f"trajectory{i}",
+                                 boundaries=sim_space,
+                                 timestep_stride=3)
 
     # save particle group info.
-    sim_data = {"cubes": cubes, "velocity_for_cubes": velocity_for_cubes, "nparticles": nparticles}
+    sim_data = {
+            "sim_id": i, "cubes": cubes, "velocity_for_cubes": velocity_for_cubes, "nparticles": int(nparticles)
+        }
     with open(f"{save_path}/particle_info{i}.json", "w") as outfile:
-        json.dump(sim_data, outfile)
-
-
+        json.dump(sim_data, outfile, indent=4)
 
 
 if __name__ == "__main__":
-    n_trajectories = 5
-    for i in range(n_trajectories):
-        data = run_collision(i)
 
+    # load input file
+    f = open('inputs.json')
+    inputs = json.load(f)
+    f.close()
 
-
-
-    # # save
-    # if frame == 99:
-    #     writer = ti.tools.PLYWriter(num_vertices=particles['position'].shape[0])
-    #     writer.add_vertex_pos(
-    #         particles['position'][:, 0], particles['position'][:, 1], particles['position'][:, 2])
-    #     # writer.export_frame_ascii(frame, series_prefix)
+    for i in range(inputs["id_range"][0], inputs["id_range"][1]):
+        data = run_collision(i, inputs)
