@@ -21,7 +21,7 @@ def run_collision(i, inputs):
     mpm_dt = inputs["mpm_dt"]
     gravity = inputs["gravity"]
     # visualization & simulation inputs
-    is_realtime_vis = inputs["is_realtime_vis"]
+    is_realtime_vis = inputs["visualization"]["is_realtime_vis"]
     save_path = inputs["save_path"]
 
     # init visualizer
@@ -29,7 +29,7 @@ def run_collision(i, inputs):
         gui = ti.GUI('MPM3D', res=512, background_color=0x112F41)
 
     # init MPM solver
-    ti.init(arch=ti.cuda)
+    ti.init(arch=ti.cuda, device_memory_GB=3.4)
     mpm = MPMSolver(res=sim_resolution, size=domain_size)
 
     if inputs["gen_cube_from_data"]["generate"] == inputs["gen_cube_randomly"]["generate"]:
@@ -118,12 +118,13 @@ def run_collision(i, inputs):
     print(f"Output written to: {save_path}/trajectory{i}")
 
     # gen animation and save
-    if inputs["is_save_animation"]:
-        utils.animation_from_npz(path=save_path,
-                                 npz_name=f"trajectory{i}",
-                                 save_name=f"trajectory{i}",
-                                 boundaries=sim_space,
-                                 timestep_stride=3)
+    if inputs["visualization"]["is_save_animation"]:
+        if i % inputs["visualization"]["skip"] == 0:
+            utils.animation_from_npz(path=save_path,
+                                     npz_name=f"trajectory{i}",
+                                     save_name=f"trajectory{i}",
+                                     boundaries=sim_space,
+                                     timestep_stride=3)
 
     # save particle group info.
     sim_data = {

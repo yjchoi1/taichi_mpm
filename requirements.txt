@@ -1,4 +1,4 @@
 taichi==1.2.2
-numpy
+numpy==1.23.1
 matplotlib
-from tqdm
+tqdm

@@ -51,8 +51,8 @@ def generate_cubes(
             if calculate_particles(cubes, density) > max_particles:
                 return cubes[:-1]  # If adding the new cube results in exceeding the max particles, return the list without the last cube
         attemps += 1
-        if attemps > 10000:
-            print(f"cannot find in {attemps}")
+        if attemps > 1000000:
+            print(f"cannot find none-overlapping cubes in {attemps} attempts")
             break
     return cubes
 
