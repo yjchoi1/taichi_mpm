@@ -97,9 +97,14 @@ def animation_from_npz(path, npz_name, save_name, boundaries, timestep_stride=5,
 
         # ax = fig.add_subplot(111, aspect='equal', autoscale_on=False, xlim=xboundary, ylim=yboundary)
         ax = fig.add_subplot(projection='3d', autoscale_on=False)
+        # Note: z and y is interchanged to match taichi coordinate convention.
         ax.set_xlim(boundaries[0][0], boundaries[0][1])
-        ax.set_ylim(boundaries[1][0], boundaries[1][1])
-        ax.set_zlim(boundaries[2][0], boundaries[2][1])
+        ax.set_ylim(boundaries[2][0], boundaries[2][1])
+        ax.set_zlim(boundaries[1][0], boundaries[1][1])
+        ax.set_xlabel("x")
+        ax.set_ylabel("z")
+        ax.set_zlabel("y")
+        ax.invert_zaxis()
         if colorful:
             trj = ax.scatter(positions[i][:, 0], positions[i][:, 2], positions[i][:, 1],
                              c=sampled_value, vmin=vmin, vmax=vmax, cmap=cmap, s=1)
@@ -107,6 +112,10 @@ def animation_from_npz(path, npz_name, save_name, boundaries, timestep_stride=5,
         else:
             ax.scatter(positions[i][:, 0], positions[i][:, 2], positions[i][:, 1],
                        s=1)
+        ax.set_box_aspect(
+            aspect=(float(boundaries[0][0]) - float(boundaries[0][1]),
+                    float(boundaries[2][0]) - float(boundaries[2][1]),
+                    float(boundaries[1][0]) - float(boundaries[1][1])))
         ax.view_init(elev=20., azim=i*0.5)
         # ax.view_init(elev=20., azim=0.5)
         ax.grid(True, which='both')

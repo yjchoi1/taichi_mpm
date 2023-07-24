@@ -39,10 +39,12 @@ def run_collision(i, inputs):
     # Gen cubes from data
     if inputs["gen_cube_from_data"]["generate"]:
         cube_data = inputs["gen_cube_from_data"]["cube_data"]  # list containing cubes for each sim id
+        obstacle_data = inputs["gen_cube_from_data"]["obstacle_data"]
         if len(cube_data) != len(range(inputs["id_range"][0], inputs["id_range"][1])):
             raise NotImplemented(f"Enough length of cube_data should be provided to match id_range")
         cubes = cube_data[i]["cubes"]
         velocity_for_cubes = cube_data[i]["velocity_for_cubes"]
+        obstacles = obstacle_data[i]["cubes"]
 
     # Random cube generation
     if inputs["gen_cube_randomly"]["generate"]:
@@ -77,6 +79,13 @@ def run_collision(i, inputs):
             velocity=velocity_for_cubes[idx])
         nparticles_per_cube = (cube[3] * cube[4] * cube[5]) * nparticel_per_vol
         nparticles += nparticles_per_cube
+    if inputs["gen_cube_from_data"]["generate"]:
+        for idx, cube in enumerate(obstacles):
+            mpm.add_cube(
+                lower_corner=[cube[0], cube[1], cube[2]],
+                cube_size=[cube[3], cube[4], cube[5]],
+                material=MPMSolver.material_stationary,
+                velocity=[0, 0, 0])
 
     mpm.add_surface_collider(point=(sim_space[0][0], 0.0, 0.0), normal=(1.0, 0.0, 0.0))
     mpm.add_surface_collider(point=(sim_space[0][1], 0.0, 0.0), normal=(-1.0, 0.0, 0.0))
@@ -124,9 +133,8 @@ def run_collision(i, inputs):
                                      npz_name=f"trajectory{i}",
                                      save_name=f"trajectory{i}",
                                      boundaries=sim_space,
-                                     timestep_stride=3)
+                                     timestep_stride=5)
 
-    # save particle group info.
     sim_data = {
             "sim_id": i, "cubes": cubes, "velocity_for_cubes": velocity_for_cubes, "nparticles": int(nparticles)
         }
@@ -140,6 +148,12 @@ if __name__ == "__main__":
     f = open('inputs.json')
     inputs = json.load(f)
     f.close()
+
+    # save input file being used.
+    if not os.path.exists(inputs['save_path']):
+        os.makedirs(inputs['save_path'])
+    with open(f"{inputs['save_path']}/inputs.json", "w") as input_file:
+        json.dump(inputs, input_file, indent=4)
 
     for i in range(inputs["id_range"][0], inputs["id_range"][1]):
         data = run_collision(i, inputs)
