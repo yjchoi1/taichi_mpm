@@ -8,11 +8,12 @@ import utils
 from tqdm import tqdm
 from engine.mpm_solver import MPMSolver
 
-def run_collision(i, inputs):
 
+def run_collision(i, inputs):
     # inputs about general simulation information
     domain_size = inputs["domain_size"]
     sim_space = inputs["sim_space"]
+    ndim = len(sim_space)
     sim_resolution = inputs["sim_resolution"]
     # because of the memory issue in GNS, the following resolution recommended.
     # limit of # particles are hard-coded based on this resolution
@@ -39,12 +40,13 @@ def run_collision(i, inputs):
     # Gen cubes from data
     if inputs["gen_cube_from_data"]["generate"]:
         sim_input = inputs["gen_cube_from_data"]["sim_inputs"][i]
-        if len(inputs["gen_cube_from_data"]["sim_inputs"]) !=\
+        if len(inputs["gen_cube_from_data"]["sim_inputs"]) != \
                 len(range(inputs["id_range"][0], inputs["id_range"][1])):
             raise NotImplemented(f"Length of `sim_inputs` should match the length of `id_range`")
         cubes = sim_input["mass"]["cubes"]
         velocity_for_cubes = sim_input["mass"]["velocity_for_cubes"]
-        obstacles = sim_input["obstacles"]["cubes"]
+        if sim_input["obstacles"] is not None:
+            obstacles = sim_input["obstacles"]["cubes"]
 
     # Random cube generation
     if inputs["gen_cube_randomly"]["generate"]:
@@ -73,27 +75,34 @@ def run_collision(i, inputs):
     nparticles = int(0)
     for idx, cube in enumerate(cubes):
         mpm.add_cube(
-            lower_corner=[cube[0], cube[1], cube[2]],
-            cube_size=[cube[3], cube[4], cube[5]],
+            lower_corner=[cube[0], cube[1], cube[2]] if ndim == 3 else [cube[0], cube[1]],
+            cube_size=[cube[3], cube[4], cube[5]] if ndim == 3 else [cube[2], cube[3]],
             material=MPMSolver.material_sand,
             velocity=velocity_for_cubes[idx])
-        nparticles_per_cube = (cube[3] * cube[4] * cube[5]) * nparticel_per_vol
-        nparticles += nparticles_per_cube
+        nparticles_per_cube = cube[3] * cube[4] * cube[5] * nparticel_per_vol if ndim == 3 else cube[2] * cube[3] * nparticel_per_vol
+        nparticles += int(nparticles_per_cube)
     if inputs["gen_cube_from_data"]["generate"]:
-        for idx, cube in enumerate(obstacles):
-            mpm.add_cube(
-                lower_corner=[cube[0], cube[1], cube[2]],
-                cube_size=[cube[3], cube[4], cube[5]],
-                material=MPMSolver.material_stationary,
-                velocity=[0, 0, 0])
+        if inputs["gen_cube_from_data"]["sim_inputs"][i]["obstacles"] is not None:
+            for idx, cube in enumerate(obstacles):
+                mpm.add_cube(
+                    lower_corner=[cube[0], cube[1], cube[2]] if ndim == 3 else [cube[0], cube[1]],
+                    cube_size=[cube[3], cube[4], cube[5]] if ndim == 3 else [cube[2], cube[3]],
+                    material=MPMSolver.material_stationary,
+                    velocity=[0, 0, 0] if ndim == 3 else [0, 0])
 
-    mpm.add_surface_collider(point=(sim_space[0][0], 0.0, 0.0), normal=(1.0, 0.0, 0.0))
-    mpm.add_surface_collider(point=(sim_space[0][1], 0.0, 0.0), normal=(-1.0, 0.0, 0.0))
-    mpm.add_surface_collider(point=(0.0, sim_space[1][0], 0.0), normal=(0.0, 1.0, 0.0))
-    mpm.add_surface_collider(point=(0.0, sim_space[1][1], 0.0), normal=(0.0, -1.0, 0.0))
-    mpm.add_surface_collider(point=(0.0, 0.0, sim_space[2][0]), normal=(0.0, 0.0, 1.0))
-    mpm.add_surface_collider(point=(0.0, 0.0, sim_space[2][1]), normal=(0.0, 0.0, -1.0))
-    mpm.set_gravity((0, gravity, 0))
+    if ndim == 3:
+        mpm.add_surface_collider(point=(sim_space[0][0], 0.0, 0.0), normal=(1.0, 0.0, 0.0))
+        mpm.add_surface_collider(point=(sim_space[0][1], 0.0, 0.0), normal=(-1.0, 0.0, 0.0))
+        mpm.add_surface_collider(point=(0.0, sim_space[1][0], 0.0), normal=(0.0, 1.0, 0.0))
+        mpm.add_surface_collider(point=(0.0, sim_space[1][1], 0.0), normal=(0.0, -1.0, 0.0))
+        mpm.add_surface_collider(point=(0.0, 0.0, sim_space[2][0]), normal=(0.0, 0.0, 1.0))
+        mpm.add_surface_collider(point=(0.0, 0.0, sim_space[2][1]), normal=(0.0, 0.0, -1.0))
+        mpm.set_gravity((0, gravity, 0))
+    else:
+        mpm.add_surface_collider(point=(sim_space[0][0], 0.0), normal=(1.0, 0.0, ))
+        mpm.add_surface_collider(point=(sim_space[0][1], 0.0), normal=(-1.0, 0.0))
+        mpm.add_surface_collider(point=(0.0, sim_space[1][0]), normal=(0.0, 1.0))
+        mpm.add_surface_collider(point=(0.0, sim_space[1][1]), normal=(0.0, -1.0))
 
     # run simulation
     print(f"Running simulation {i} between {inputs['id_range'][0]} from {inputs['id_range'][1]}...")
@@ -106,7 +115,7 @@ def run_collision(i, inputs):
 
         if is_realtime_vis:
             # simple camera transform
-            screen_x = ((particles['position'][:, 0] + particles['position'][:, 2]) / 2**0.5) - 0.2
+            screen_x = ((particles['position'][:, 0] + particles['position'][:, 2]) / 2 ** 0.5) - 0.2
             screen_y = (particles['position'][:, 1])
             # screen_z = (np_x[:, 2])
             screen_pos = np.stack([screen_x, screen_y], axis=-1)
@@ -136,8 +145,8 @@ def run_collision(i, inputs):
                                      timestep_stride=5)
 
     sim_data = {
-            "sim_id": i, "cubes": cubes, "velocity_for_cubes": velocity_for_cubes, "nparticles": int(nparticles)
-        }
+        "sim_id": i, "cubes": cubes, "velocity_for_cubes": velocity_for_cubes, "nparticles": int(nparticles)
+    }
     with open(f"{save_path}/particle_info{i}.json", "w") as outfile:
         json.dump(sim_data, outfile, indent=4)
 

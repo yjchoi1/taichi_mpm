@@ -15,15 +15,16 @@ from typing import List, Tuple
 def generate_random_cube(
         space_size=((0.2, 0.8), (0.2, 0.8), (0.2, 0.8)),
         cube_size_range=(0.1, 0.3)):
-
-    cube_sizes = [random.uniform(*cube_size_range) for _ in range(3)]
-    cube_starts = [random.uniform(space_size[i][0], space_size[i][1] - cube_sizes[i]) for i in range(3)]
+    ndim = len(space_size)
+    cube_sizes = [random.uniform(*cube_size_range) for _ in range(ndim)]
+    cube_starts = [random.uniform(space_size[i][0], space_size[i][1] - cube_sizes[i]) for i in range(ndim)]
 
     return (*cube_starts, *cube_sizes)
 
 def check_overlap(cube1, cube2, min_distance_between_cubes=0.0):
     # Each cube is represented by (x_start, y_start, z_start, x_length, y_length, z_length)
-    for i in range(3):
+    ndim =len(cube1)/2
+    for i in range(ndim):
         if cube1[i] - min_distance_between_cubes >= cube2[i] + cube2[i+3] or cube1[i] + cube1[i+3] + min_distance_between_cubes <= cube2[i]:
             return False
     return True
@@ -72,6 +73,7 @@ def animation_from_npz(path, npz_name, save_name, boundaries, timestep_stride=5,
     data = dict(np.load(f"{path}/{npz_name}.npz", allow_pickle=True))
     for i, (sim, info) in enumerate(data.items()):
         positions = info[0]
+    ndim = positions.shape[-1]
 
     # compute vel magnitude for color bar
     if colorful:
@@ -81,44 +83,59 @@ def animation_from_npz(path, npz_name, save_name, boundaries, timestep_stride=5,
         vel = np.concatenate((initial_vel, vel))
         vel_magnitude = np.linalg.norm(vel, axis=-1)
 
-    # make animation
-    fig = plt.figure()
-    ax = fig.add_subplot(projection='3d')
 
-    def animate(i):
-        print(f"Render step {i}/{len(positions)}")
-        fig.clear()
+    if ndim == 2:
+        # make animation
+        fig, ax = plt.subplots()
 
-        if colorful:
-            cmap = plt.cm.viridis
-            vmax = np.ndarray.flatten(vel_magnitude).max()
-            vmin = np.ndarray.flatten(vel_magnitude).min()
-            sampled_value =vel_magnitude[i]
+        def animate(i):
+            fig.clear()
+            # ax = fig.add_subplot(111, aspect='equal', autoscale_on=False, xlim=xboundary, ylim=yboundary)
+            ax = fig.add_subplot(111, aspect='equal', autoscale_on=False)
+            ax.set_xlim(boundaries[0][0], boundaries[0][1])
+            ax.set_xlim(boundaries[1][0], boundaries[1][1])
+            ax.scatter(positions[i][:, 0], positions[i][:, 1], s=1)
+            ax.grid(True, which='both')
 
-        # ax = fig.add_subplot(111, aspect='equal', autoscale_on=False, xlim=xboundary, ylim=yboundary)
-        ax = fig.add_subplot(projection='3d', autoscale_on=False)
-        # Note: z and y is interchanged to match taichi coordinate convention.
-        ax.set_xlim(boundaries[0][0], boundaries[0][1])
-        ax.set_ylim(boundaries[2][0], boundaries[2][1])
-        ax.set_zlim(boundaries[1][0], boundaries[1][1])
-        ax.set_xlabel("x")
-        ax.set_ylabel("z")
-        ax.set_zlabel("y")
-        ax.invert_zaxis()
-        if colorful:
-            trj = ax.scatter(positions[i][:, 0], positions[i][:, 2], positions[i][:, 1],
-                             c=sampled_value, vmin=vmin, vmax=vmax, cmap=cmap, s=1)
-            fig.colorbar(trj)
-        else:
-            ax.scatter(positions[i][:, 0], positions[i][:, 2], positions[i][:, 1],
-                       s=1)
-        ax.set_box_aspect(
-            aspect=(float(boundaries[0][0]) - float(boundaries[0][1]),
-                    float(boundaries[2][0]) - float(boundaries[2][1]),
-                    float(boundaries[1][0]) - float(boundaries[1][1])))
-        ax.view_init(elev=20., azim=i*0.5)
-        # ax.view_init(elev=20., azim=0.5)
-        ax.grid(True, which='both')
+    if ndim == 3:
+        # make animation
+        fig = plt.figure()
+        ax = fig.add_subplot(projection='3d')
+
+        def animate(i):
+            print(f"Render step {i}/{len(positions)}")
+            fig.clear()
+
+            if colorful:
+                cmap = plt.cm.viridis
+                vmax = np.ndarray.flatten(vel_magnitude).max()
+                vmin = np.ndarray.flatten(vel_magnitude).min()
+                sampled_value =vel_magnitude[i]
+
+            # ax = fig.add_subplot(111, aspect='equal', autoscale_on=False, xlim=xboundary, ylim=yboundary)
+            ax = fig.add_subplot(projection='3d', autoscale_on=False)
+            # Note: z and y is interchanged to match taichi coordinate convention.
+            ax.set_xlim(boundaries[0][0], boundaries[0][1])
+            ax.set_ylim(boundaries[2][0], boundaries[2][1])
+            ax.set_zlim(boundaries[1][0], boundaries[1][1])
+            ax.set_xlabel("x")
+            ax.set_ylabel("z")
+            ax.set_zlabel("y")
+            ax.invert_zaxis()
+            if colorful:
+                trj = ax.scatter(positions[i][:, 0], positions[i][:, 2], positions[i][:, 1],
+                                 c=sampled_value, vmin=vmin, vmax=vmax, cmap=cmap, s=1)
+                fig.colorbar(trj)
+            else:
+                ax.scatter(positions[i][:, 0], positions[i][:, 2], positions[i][:, 1],
+                           s=1)
+            ax.set_box_aspect(
+                aspect=(float(boundaries[0][0]) - float(boundaries[0][1]),
+                        float(boundaries[2][0]) - float(boundaries[2][1]),
+                        float(boundaries[1][0]) - float(boundaries[1][1])))
+            ax.view_init(elev=20., azim=i*0.5)
+            # ax.view_init(elev=20., azim=0.5)
+            ax.grid(True, which='both')
 
     # Creat animation
     ani = animation.FuncAnimation(
