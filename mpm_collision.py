@@ -38,13 +38,13 @@ def run_collision(i, inputs):
 
     # Gen cubes from data
     if inputs["gen_cube_from_data"]["generate"]:
-        cube_data = inputs["gen_cube_from_data"]["cube_data"]  # list containing cubes for each sim id
-        obstacle_data = inputs["gen_cube_from_data"]["obstacle_data"]
-        if len(cube_data) != len(range(inputs["id_range"][0], inputs["id_range"][1])):
-            raise NotImplemented(f"Enough length of cube_data should be provided to match id_range")
-        cubes = cube_data[i]["cubes"]
-        velocity_for_cubes = cube_data[i]["velocity_for_cubes"]
-        obstacles = obstacle_data[i]["cubes"]
+        sim_input = inputs["gen_cube_from_data"]["sim_inputs"][i]
+        if len(inputs["gen_cube_from_data"]["sim_inputs"]) !=\
+                len(range(inputs["id_range"][0], inputs["id_range"][1])):
+            raise NotImplemented(f"Length of `sim_inputs` should match the length of `id_range`")
+        cubes = sim_input["mass"]["cubes"]
+        velocity_for_cubes = sim_input["mass"]["velocity_for_cubes"]
+        obstacles = sim_input["obstacles"]["cubes"]
 
     # Random cube generation
     if inputs["gen_cube_randomly"]["generate"]:
