@@ -6,7 +6,7 @@ import math
 import json
 import multiprocessing as mp
 
-f = open('inputs.json')
+f = open('inputs_example.json')
 INPUTS = json.load(f)
 f.close()
 USE_IN_BLENDER = False

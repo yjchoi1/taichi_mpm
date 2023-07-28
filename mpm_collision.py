@@ -17,17 +17,21 @@ def run_collision(i, inputs):
     sim_resolution = inputs["sim_resolution"]
     # because of the memory issue in GNS, the following resolution recommended.
     # limit of # particles are hard-coded based on this resolution
-    nparticel_per_vol = inputs["nparticel_per_vol"]  # 64*64*64/m^3
+    nparticel_per_vol = int(np.prod([sim_resolution[dim]*2 for dim in range(ndim)]))
     nsteps = inputs["nsteps"]
     mpm_dt = inputs["mpm_dt"]
     gravity = inputs["gravity"]
     # visualization & simulation inputs
     is_realtime_vis = inputs["visualization"]["is_realtime_vis"]
     save_path = inputs["save_path"]
+    ndim = len(sim_space)
 
     # init visualizer
     if is_realtime_vis:
-        gui = ti.GUI('MPM3D', res=512, background_color=0x112F41)
+        if ndim == 3:
+            gui = ti.GUI('MPM3D', res=512, background_color=0x112F41)
+        if ndim == 2:
+            gui = ti.GUI("Taichi Elements", res=512, background_color=0x112F41)
 
     # init MPM solver
     ti.init(arch=ti.cuda, device_memory_GB=3.4)
@@ -97,7 +101,7 @@ def run_collision(i, inputs):
         mpm.add_surface_collider(point=(0.0, sim_space[1][1], 0.0), normal=(0.0, -1.0, 0.0))
         mpm.add_surface_collider(point=(0.0, 0.0, sim_space[2][0]), normal=(0.0, 0.0, 1.0))
         mpm.add_surface_collider(point=(0.0, 0.0, sim_space[2][1]), normal=(0.0, 0.0, -1.0))
-        mpm.set_gravity((0, gravity, 0))
+        mpm.set_gravity(gravity)
     else:
         mpm.add_surface_collider(point=(sim_space[0][0], 0.0), normal=(1.0, 0.0, ))
         mpm.add_surface_collider(point=(sim_space[0][1], 0.0), normal=(-1.0, 0.0))
@@ -114,13 +118,18 @@ def run_collision(i, inputs):
         positions.append(particles["position"])
 
         if is_realtime_vis:
-            # simple camera transform
-            screen_x = ((particles['position'][:, 0] + particles['position'][:, 2]) / 2 ** 0.5) - 0.2
-            screen_y = (particles['position'][:, 1])
-            # screen_z = (np_x[:, 2])
-            screen_pos = np.stack([screen_x, screen_y], axis=-1)
-            gui.circles(utils.T(particles['position']), radius=1.5, color=0x66ccff)
-            gui.show()
+            if ndim == 3:
+                # simple camera transform
+                screen_x = ((particles['position'][:, 0] + particles['position'][:, 2]) / 2 ** 0.5) - 0.2
+                screen_y = (particles['position'][:, 1])
+                # screen_z = (np_x[:, 2])
+                screen_pos = np.stack([screen_x, screen_y], axis=-1)
+                gui.circles(utils.T(particles['position']), radius=1.5, color=0x66ccff)
+                gui.show()
+            if ndim == 2:
+                gui.circles(particles['position'],
+                            radius=1.5,
+                            color=colors[particles['material']])
     positions = np.stack(positions)
 
     # save as npz
@@ -154,14 +163,14 @@ def run_collision(i, inputs):
 if __name__ == "__main__":
 
     # load input file
-    f = open('inputs.json')
+    f = open('inputs_example.json')
     inputs = json.load(f)
     f.close()
 
     # save input file being used.
     if not os.path.exists(inputs['save_path']):
         os.makedirs(inputs['save_path'])
-    with open(f"{inputs['save_path']}/inputs.json", "w") as input_file:
+    with open(f"{inputs['save_path']}/inputs_example.json", "w") as input_file:
         json.dump(inputs, input_file, indent=4)
 
     for i in range(inputs["id_range"][0], inputs["id_range"][1]):

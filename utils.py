@@ -12,50 +12,46 @@ import random
 from typing import List, Tuple
 
 
-def generate_random_cube(
-        space_size=((0.2, 0.8), (0.2, 0.8), (0.2, 0.8)),
-        cube_size_range=(0.1, 0.3)):
+def generate_random_cube(space_size=((0.2, 0.8), (0.2, 0.8)), cube_size_range=(0.1, 0.3)):
     ndim = len(space_size)
     cube_sizes = [random.uniform(*cube_size_range) for _ in range(ndim)]
     cube_starts = [random.uniform(space_size[i][0], space_size[i][1] - cube_sizes[i]) for i in range(ndim)]
-
     return (*cube_starts, *cube_sizes)
 
 def check_overlap(cube1, cube2, min_distance_between_cubes=0.0):
-    # Each cube is represented by (x_start, y_start, z_start, x_length, y_length, z_length)
-    ndim =len(cube1)/2
+    ndim = int(len(cube1) / 2)
     for i in range(ndim):
-        if cube1[i] - min_distance_between_cubes >= cube2[i] + cube2[i+3] or cube1[i] + cube1[i+3] + min_distance_between_cubes <= cube2[i]:
+        if cube1[i] - min_distance_between_cubes >= cube2[i] + cube2[i + ndim] or \
+           cube1[i] + cube1[i + ndim] + min_distance_between_cubes <= cube2[i]:
             return False
     return True
 
 def calculate_particles(cubes, density):
-    total_volume = sum(c[3]*c[4]*c[5] for c in cubes)  # volume of each cube is length*width*height
+    ndim = len(cubes[0]) / 2
+    if ndim == 3:
+        total_volume = sum(c[3] * c[4] * c[5] for c in cubes)
+    elif ndim == 2:
+        total_volume = sum(c[2] * c[3] for c in cubes)
+    else:
+        raise ValueError("Only 2D and 3D dimensions are supported.")
     return total_volume * density
 
-def generate_cubes(
-        n,
-        space_size=((0.2, 0.8), (0.2, 0.8), (0.2, 0.8)),
-        cube_size_range=(0.1, 0.3),
-        min_distance_between_cubes=0.01,
-        density=2000,
-        max_particles=float('inf')):
+def generate_cubes(n, space_size=((0.2, 0.8), (0.2, 0.8)), cube_size_range=(0.1, 0.3),
+                   min_distance_between_cubes=0.01, density=2000, max_particles=float('inf')):
     cubes = []
-    attemps = 0
+    attempts = 0
     while len(cubes) < n:
         new_cube = generate_random_cube(space_size, cube_size_range)
-        if any(check_overlap(
-                new_cube, cube, min_distance_between_cubes=min_distance_between_cubes) for cube in cubes):
-            cubes = []  # Clear the cube list and start over
-        else:
+        if not any(check_overlap(new_cube, cube, min_distance_between_cubes=min_distance_between_cubes) for cube in cubes):
             cubes.append(new_cube)
             if calculate_particles(cubes, density) > max_particles:
-                return cubes[:-1]  # If adding the new cube results in exceeding the max particles, return the list without the last cube
-        attemps += 1
-        if attemps > 1000000:
-            print(f"cannot find none-overlapping cubes in {attemps} attempts")
-            break
+                return cubes[:-1]
+        attempts += 1
+        if attempts > 1000000:
+            print(f"Cannot find non-overlapping cubes in {attempts} attempts")
+            return []
     return cubes
+
 
 def T(a):
     phi, theta = np.radians(32), np.radians(10)
@@ -93,7 +89,7 @@ def animation_from_npz(path, npz_name, save_name, boundaries, timestep_stride=5,
             # ax = fig.add_subplot(111, aspect='equal', autoscale_on=False, xlim=xboundary, ylim=yboundary)
             ax = fig.add_subplot(111, aspect='equal', autoscale_on=False)
             ax.set_xlim(boundaries[0][0], boundaries[0][1])
-            ax.set_xlim(boundaries[1][0], boundaries[1][1])
+            ax.set_ylim(boundaries[1][0], boundaries[1][1])
             ax.scatter(positions[i][:, 0], positions[i][:, 1], s=1)
             ax.grid(True, which='both')
 
