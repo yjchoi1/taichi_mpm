@@ -17,7 +17,7 @@ def run_collision(i, inputs):
     sim_resolution = inputs["sim_resolution"]
     # because of the memory issue in GNS, the following resolution recommended.
     # limit of # particles are hard-coded based on this resolution
-    nparticel_per_vol = int(np.prod([sim_resolution[dim]*2 for dim in range(ndim)]))
+    nparticel_per_vol = int(np.prod([sim_resolution[dim]/domain_size*2 for dim in range(ndim)]))
     nsteps = inputs["nsteps"]
     mpm_dt = inputs["mpm_dt"]
     gravity = inputs["gravity"]
