@@ -9,9 +9,6 @@ import utils
 from tqdm import tqdm
 from engine.mpm_solver import MPMSolver
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--input_file', type=str, required=True, help="Input json file name")
-args = parser.parse_args()
 
 def run_collision(i, inputs):
     # inputs about general simulation information
@@ -41,7 +38,7 @@ def run_collision(i, inputs):
 
     # init MPM solver
     ti.init(arch=ti.cuda, device_memory_GB=3.4)
-    mpm = MPMSolver(res=sim_resolution, size=domain_size)
+    mpm = MPMSolver(inputs=inputs, res=sim_resolution, size=domain_size)
 
     if inputs["gen_cube_from_data"]["generate"] == inputs["gen_cube_randomly"]["generate"]:
         raise NotImplemented(
@@ -86,14 +83,14 @@ def run_collision(i, inputs):
             velocity_for_cubes.append(velocity)
 
         # Make cubes for mass regarding rigid obstacles
-        rand_gen_inputs = inputs["gen_cube_randomly"]["sim_inputs"]
-        ncubes = rand_gen_inputs["obstacles"]["ncubes"]
-        min_distance_between_cubes = rand_gen_inputs["obstacles"]["min_distance_between_cubes"]
-        cube_size_range = rand_gen_inputs["obstacles"]["cube_size_range"]
-        cube_gen_space = rand_gen_inputs["obstacles"]["cube_gen_space"]
-        nparticle_limits = rand_gen_inputs["obstacles"]["nparticle_limits"]
-
         if "obstacles" in rand_gen_inputs:
+            rand_gen_inputs = inputs["gen_cube_randomly"]["sim_inputs"]
+            ncubes = rand_gen_inputs["obstacles"]["ncubes"]
+            min_distance_between_cubes = rand_gen_inputs["obstacles"]["min_distance_between_cubes"]
+            cube_size_range = rand_gen_inputs["obstacles"]["cube_size_range"]
+            cube_gen_space = rand_gen_inputs["obstacles"]["cube_gen_space"]
+            nparticle_limits = rand_gen_inputs["obstacles"]["nparticle_limits"]
+
             obstacles = utils.generate_cubes(
                 n=random.randint(ncubes[0], ncubes[1]),
                 space_size=cube_gen_space,
@@ -134,18 +131,18 @@ def run_collision(i, inputs):
     nparticles = len(mpm.particle_info()["position"])
 
     if ndim == 3:
-        mpm.add_surface_collider(point=(sim_space[0][0], 0.0, 0.0), normal=(1.0, 0.0, 0.0))
-        mpm.add_surface_collider(point=(sim_space[0][1], 0.0, 0.0), normal=(-1.0, 0.0, 0.0))
-        mpm.add_surface_collider(point=(0.0, sim_space[1][0], 0.0), normal=(0.0, 1.0, 0.0))
-        mpm.add_surface_collider(point=(0.0, sim_space[1][1], 0.0), normal=(0.0, -1.0, 0.0))
-        mpm.add_surface_collider(point=(0.0, 0.0, sim_space[2][0]), normal=(0.0, 0.0, 1.0))
-        mpm.add_surface_collider(point=(0.0, 0.0, sim_space[2][1]), normal=(0.0, 0.0, -1.0))
+        mpm.add_surface_collider(point=(sim_space[0][0], 0.0, 0.0), normal=(1.0, 0.0, 0.0), friction=inputs["wall_friction"])
+        mpm.add_surface_collider(point=(sim_space[0][1], 0.0, 0.0), normal=(-1.0, 0.0, 0.0), friction=inputs["wall_friction"])
+        mpm.add_surface_collider(point=(0.0, sim_space[1][0], 0.0), normal=(0.0, 1.0, 0.0), friction=inputs["wall_friction"])
+        mpm.add_surface_collider(point=(0.0, sim_space[1][1], 0.0), normal=(0.0, -1.0, 0.0), friction=inputs["wall_friction"])
+        mpm.add_surface_collider(point=(0.0, 0.0, sim_space[2][0]), normal=(0.0, 0.0, 1.0), friction=inputs["wall_friction"])
+        mpm.add_surface_collider(point=(0.0, 0.0, sim_space[2][1]), normal=(0.0, 0.0, -1.0), friction=inputs["wall_friction"])
         mpm.set_gravity(gravity)
     else:
-        mpm.add_surface_collider(point=(sim_space[0][0], 0.0), normal=(1.0, 0.0, ))
-        mpm.add_surface_collider(point=(sim_space[0][1], 0.0), normal=(-1.0, 0.0))
-        mpm.add_surface_collider(point=(0.0, sim_space[1][0]), normal=(0.0, 1.0))
-        mpm.add_surface_collider(point=(0.0, sim_space[1][1]), normal=(0.0, -1.0))
+        mpm.add_surface_collider(point=(sim_space[0][0], 0.0), normal=(1.0, 0.0, ), friction=inputs["wall_friction"])
+        mpm.add_surface_collider(point=(sim_space[0][1], 0.0), normal=(-1.0, 0.0), friction=inputs["wall_friction"])
+        mpm.add_surface_collider(point=(0.0, sim_space[1][0]), normal=(0.0, 1.0), friction=inputs["wall_friction"])
+        mpm.add_surface_collider(point=(0.0, sim_space[1][1]), normal=(0.0, -1.0), friction=inputs["wall_friction"])
 
     # run simulation
     print(f"Running simulation {i}/{inputs['id_range'][1]}...")
@@ -216,6 +213,10 @@ def run_collision(i, inputs):
 
 
 if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--input_file', default="inputs.json", type=str, help="Input json file name")
+    args = parser.parse_args()
 
     # input
     input_filename = args.input_file
