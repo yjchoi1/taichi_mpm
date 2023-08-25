@@ -1,9 +1,10 @@
 # Granular Flow Simulation Using `taichi_mpm`
-Simulating sand mass collision using [taichi mpm](https://github.com/taichi-dev/taichi_elements)
+Simulating sand mass collision using
+[taichi mpm](https://github.com/taichi-dev/taichi_elements)
 
 ## Input
-Using `input.json` file, granular mass can either be generated randomly in a specified domain,
-or can be placed manually.
+Using `input.json` file, granular mass can either be generated randomly in a 
+specified domain, or can be placed manually.
 
 ```shell
 {
@@ -39,15 +40,27 @@ or can be placed manually.
     ],
     "nsteps": 350,  # number of forward steps
     "mpm_dt": 0.0025,  # time between forward steps
-    "gravity": -9.81,
+    "gravity": [0, -9.81, 0],
     "gen_cube_randomly": {
         "generate": true,
-        "ncubes": [1, 3],
-        "min_distance_between_cubes": 0.01,
-        "cube_size_range": [0.15, 0.30],
-        "vel_range": [-2.5, 2.5],
-        "cube_gen_space":  [[0.21, 0.79], [0.21, 0.79], [0.21, 0.79]],
-        "nparticle_limits": 20000
+        "sim_inputs": {
+            "mass": {
+                "ncubes": [1, 2],
+                "min_distance_between_cubes": 0.01,
+                "cube_size_range": [[0.15, 0.3], [0.15, 0.3], [0.15, 0.3]],
+                "cube_gen_space": [[0.11, 0.5], [0.11, 0.50], [0.11, 0.89]],
+                "vel_range": [[3, 3], [-2.5, 2.5], [-2.5, 2.5]],
+                "nparticle_limits": 15000
+            },
+            "obstacles": {
+                "ncubes": [1, 2],
+                "min_distance_between_cubes": 0.01,
+                "cube_size_range": [[0.1, 0.1], [0.3, 0.3], [0.1, 0.1]],
+                "cube_gen_space": [[1.0, 1.5], [0.10, 0.4], [0.15, 0.85]],
+                "vel_range": [-2.5, 2.5],
+                "nparticle_limits": 7000
+            }
+        }
     },
     "gen_cube_from_data": {
         "generate": true,
@@ -87,9 +100,16 @@ or can be placed manually.
     }
 }
 ```
+In the random generating case,
+if `cube_size_range` is defined for all dimensions (e.g., `[[0.15, 0.3], [0.15, 0.3], [0.15, 0.3]]`),
+the shape of cubes will be randomly generated following the specified values.
+If `cube_size_range` is only defined for one dimension (e.g., `[0.1, 0.4]`), 
+the shape of cubes will be square whose length if random from `[0.1, 0.4]`
+
 
 ## Output
-The output is saved and `.npz` file. The code also saves simple `.gif` animation for the simulation. 
+The output is saved and `.npz` file. The code also saves simple `.gif` 
+animation for the simulation. 
 
 ## Run
 ```shell
@@ -98,6 +118,12 @@ python3 mpm_collision.py
 
 ## Simulation Example
 ![Sand collision example](example.gif)
+
+## Note
+In taichi, coordinate y-axis corresponds to the height and y-axis corresponds 
+to the plain. However, in matplotlib used in rendering, these axes are the opposite.
+To deal with this problem, we transpose the axis of the taichi simulation results
+(positions) when saving `.npz` files. 
 
 
 

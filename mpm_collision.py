@@ -1,5 +1,6 @@
 import numpy as np
 import json
+import argparse
 import os
 import json
 import taichi as ti
@@ -8,6 +9,9 @@ import utils
 from tqdm import tqdm
 from engine.mpm_solver import MPMSolver
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--input_file', type=str, required=True, help="Input json file name")
+args = parser.parse_args()
 
 def run_collision(i, inputs):
     # inputs about general simulation information
@@ -30,8 +34,10 @@ def run_collision(i, inputs):
     if is_realtime_vis:
         if ndim == 3:
             gui = ti.GUI('MPM3D', res=512, background_color=0x112F41)
-        if ndim == 2:
+        elif ndim == 2:
             gui = ti.GUI("Taichi Elements", res=512, background_color=0x112F41)
+        else:
+            raise ValueError("`ndim` should be 2 or 3")
 
     # init MPM solver
     ti.init(arch=ti.cuda, device_memory_GB=3.4)
@@ -47,22 +53,26 @@ def run_collision(i, inputs):
         if len(inputs["gen_cube_from_data"]["sim_inputs"]) != \
                 len(range(inputs["id_range"][0], inputs["id_range"][1])):
             raise NotImplemented(f"Length of `sim_inputs` should match the length of `id_range`")
+        # Mass regarding soft mass
         cubes = sim_input["mass"]["cubes"]
         velocity_for_cubes = sim_input["mass"]["velocity_for_cubes"]
-        if sim_input["obstacles"] is not None:
+        # Mass regarding rigid obstacles
+        if "obstacles" in sim_input:
             obstacles = sim_input["obstacles"]["cubes"]
+        else:
+            obstacles = None
 
     # Random cube generation
-    if inputs["gen_cube_randomly"]["generate"]:
-        rand_gen_inputs = inputs["gen_cube_randomly"]
-        ncubes = rand_gen_inputs["ncubes"]
-        min_distance_between_cubes = rand_gen_inputs["min_distance_between_cubes"]
-        cube_size_range = rand_gen_inputs["cube_size_range"]
-        vel_range = rand_gen_inputs["vel_range"]
-        cube_gen_space = rand_gen_inputs["cube_gen_space"]
-        nparticle_limits = rand_gen_inputs["nparticle_limits"]
+    elif inputs["gen_cube_randomly"]["generate"]:
+        # Make cubes for mass regarding soft mass
+        rand_gen_inputs = inputs["gen_cube_randomly"]["sim_inputs"]
+        ncubes = rand_gen_inputs["mass"]["ncubes"]
+        min_distance_between_cubes = rand_gen_inputs["mass"]["min_distance_between_cubes"]
+        cube_size_range = rand_gen_inputs["mass"]["cube_size_range"]
+        vel_range = rand_gen_inputs["mass"]["vel_range"]
+        cube_gen_space = rand_gen_inputs["mass"]["cube_gen_space"]
+        nparticle_limits = rand_gen_inputs["mass"]["nparticle_limits"]
 
-        # make cubes
         cubes = utils.generate_cubes(
             n=random.randint(ncubes[0], ncubes[1]),
             space_size=cube_gen_space,
@@ -70,29 +80,58 @@ def run_collision(i, inputs):
             min_distance_between_cubes=min_distance_between_cubes,
             density=nparticel_per_vol,
             max_particles=nparticle_limits)
-        # assign velocity for each cube
         velocity_for_cubes = []
         for _ in cubes:
-            velocity = [random.uniform(vel_range[0], vel_range[1]) for _ in range(len(sim_space))]
+            velocity = [random.uniform(vel_range[d][0], vel_range[d][1]) for d in range(ndim)]
             velocity_for_cubes.append(velocity)
 
-    nparticles = int(0)
+        # Make cubes for mass regarding rigid obstacles
+        rand_gen_inputs = inputs["gen_cube_randomly"]["sim_inputs"]
+        ncubes = rand_gen_inputs["obstacles"]["ncubes"]
+        min_distance_between_cubes = rand_gen_inputs["obstacles"]["min_distance_between_cubes"]
+        cube_size_range = rand_gen_inputs["obstacles"]["cube_size_range"]
+        cube_gen_space = rand_gen_inputs["obstacles"]["cube_gen_space"]
+        nparticle_limits = rand_gen_inputs["obstacles"]["nparticle_limits"]
+
+        if "obstacles" in rand_gen_inputs:
+            obstacles = utils.generate_cubes(
+                n=random.randint(ncubes[0], ncubes[1]),
+                space_size=cube_gen_space,
+                cube_size_range=cube_size_range,
+                min_distance_between_cubes=min_distance_between_cubes,
+                density=nparticel_per_vol,
+                max_particles=nparticle_limits)
+        else:
+            obstacles = None
+    else:
+        raise ValueError
+
+    # TODO: need to overlap check between `cubes` and `obstacles`.
+
     for idx, cube in enumerate(cubes):
         mpm.add_cube(
             lower_corner=[cube[0], cube[1], cube[2]] if ndim == 3 else [cube[0], cube[1]],
             cube_size=[cube[3], cube[4], cube[5]] if ndim == 3 else [cube[2], cube[3]],
             material=MPMSolver.material_sand,
             velocity=velocity_for_cubes[idx])
-        nparticles_per_cube = cube[3] * cube[4] * cube[5] * nparticel_per_vol if ndim == 3 else cube[2] * cube[3] * nparticel_per_vol
-        nparticles += int(nparticles_per_cube)
-    if inputs["gen_cube_from_data"]["generate"]:
-        if inputs["gen_cube_from_data"]["sim_inputs"][i]["obstacles"] is not None:
-            for idx, cube in enumerate(obstacles):
-                mpm.add_cube(
-                    lower_corner=[cube[0], cube[1], cube[2]] if ndim == 3 else [cube[0], cube[1]],
-                    cube_size=[cube[3], cube[4], cube[5]] if ndim == 3 else [cube[2], cube[3]],
-                    material=MPMSolver.material_stationary,
-                    velocity=[0, 0, 0] if ndim == 3 else [0, 0])
+
+    # Make particle type array
+    n_soil_particles = mpm.particle_info()["position"].shape[0]
+    particle_type_soil = np.full(n_soil_particles, 6)
+
+    if obstacles is not None:
+        for idx, cube in enumerate(obstacles):
+            mpm.add_cube(
+                lower_corner=[cube[0], cube[1], cube[2]] if ndim == 3 else [cube[0], cube[1]],
+                cube_size=[cube[3], cube[4], cube[5]] if ndim == 3 else [cube[2], cube[3]],
+                material=MPMSolver.material_stationary,
+                velocity=[0, 0, 0] if ndim == 3 else [0, 0])
+
+        # Make particle type array
+        n_entire_particles = mpm.particle_info()["position"].shape[0]
+        particle_type_obstacle = np.full(n_entire_particles - n_soil_particles, 3)
+
+    nparticles = len(mpm.particle_info()["position"])
 
     if ndim == 3:
         mpm.add_surface_collider(point=(sim_space[0][0], 0.0, 0.0), normal=(1.0, 0.0, 0.0))
@@ -109,7 +148,7 @@ def run_collision(i, inputs):
         mpm.add_surface_collider(point=(0.0, sim_space[1][1]), normal=(0.0, -1.0))
 
     # run simulation
-    print(f"Running simulation {i} between {inputs['id_range'][0]} from {inputs['id_range'][1]}...")
+    print(f"Running simulation {i}/{inputs['id_range'][1]}...")
     positions = []
     for frame in tqdm(range(nsteps)):
         mpm.step(mpm_dt)
@@ -132,14 +171,25 @@ def run_collision(i, inputs):
                             color=colors[particles['material']])
     positions = np.stack(positions)
 
-    # save as npz
+
+    # Change axis of positions (y & z), since the render in matplotlib uses the opposite axis order
+    if ndim == 3 and follow_taichi_coord == False:
+        positions = positions[:, :, [0, 2, 1]]
+
+    # Save as npz
+    # TODO (yc):
+    #  Add a feature that only samples the particles on the perimeter of obstacle when saving npz
     if not os.path.exists(save_path):
         os.makedirs(save_path)
 
     trajectories = {}
+    if obstacles is not None:
+        particle_types = np.concatenate((particle_type_soil, particle_type_obstacle))
+    else:
+        particle_types = particle_type_soil
     trajectories[f"trajectory{i}"] = (
         positions,  # position sequence (timesteps, particles, dims)
-        np.full(positions.shape[1], 6, dtype=int))  # particle type (particles, )
+        particle_types)  # particle type (particles, )
     np.savez_compressed(f"{save_path}/trajectory{i}", **trajectories)
     print(f"Trajectory {i} has {positions.shape[1]} particles")
     print(f"Output written to: {save_path}/trajectory{i}")
@@ -151,10 +201,15 @@ def run_collision(i, inputs):
                                      npz_name=f"trajectory{i}",
                                      save_name=f"trajectory{i}",
                                      boundaries=sim_space,
-                                     timestep_stride=5)
+                                     timestep_stride=5,
+                                     follow_taichi_coord=follow_taichi_coord)
 
     sim_data = {
-        "sim_id": i, "cubes": cubes, "velocity_for_cubes": velocity_for_cubes, "nparticles": int(nparticles)
+        "sim_id": i,
+        "cubes": cubes,
+        "velocity_for_cubes": velocity_for_cubes,
+        "obstacles": obstacles,
+        "nparticles": int(nparticles)
     }
     with open(f"{save_path}/particle_info{i}.json", "w") as outfile:
         json.dump(sim_data, outfile, indent=4)
@@ -162,15 +217,17 @@ def run_collision(i, inputs):
 
 if __name__ == "__main__":
 
-    # load input file
-    f = open('inputs_example.json')
+    # input
+    input_filename = args.input_file
+    follow_taichi_coord = True
+    f = open(input_filename)
     inputs = json.load(f)
     f.close()
 
     # save input file being used.
     if not os.path.exists(inputs['save_path']):
         os.makedirs(inputs['save_path'])
-    with open(f"{inputs['save_path']}/inputs_example.json", "w") as input_file:
+    with open(f"{inputs['save_path']}/{input_filename}", "w") as input_file:
         json.dump(inputs, input_file, indent=4)
 
     for i in range(inputs["id_range"][0], inputs["id_range"][1]):
