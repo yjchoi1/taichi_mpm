@@ -58,10 +58,25 @@ def calculate_particles(cubes, density):
     return total_volume * density
 
 def generate_cubes(n,
-                   space_size=((0.2, 0.8), (0.2, 0.8)),
-                   cube_size_range=(0.1, 0.3),
-                   min_distance_between_cubes=0.01,
-                   density=2000, max_particles=float('inf')):
+                   space_size,
+                   cube_size_range,
+                   min_distance_between_cubes,
+                   density,
+                   max_particles=float('inf')):
+    """
+    Make none-overlapping n number of cubes which is defined as,
+    [x_start, y_start, z_start, z_len, y_len, z_len]
+
+    space_size: a domain where cube can be generated e.g., ((0.2, 0.8), (0.2, 0.8))
+    cube_size_range: a range that defines random cube size.
+      It can be
+        1) Size ranges are defined for all dims. (e.g., [[0.15, 0.3], [0.15, 0.3], [0.15, 0.3]]
+        2) Or, if you want it to be squared shape, [0.3, 0.5] which is the range of squared-shaped cube
+        that will be generated.
+    min_distance_between_cubes: separation distance between cubes
+    density: n particle per volume (n-particles/m^3)
+    max_particles: restrict the numer of particles that will be generated.
+    """
     cubes = []
     attempts = 0
     while len(cubes) < n:
@@ -71,7 +86,7 @@ def generate_cubes(n,
             if calculate_particles(cubes, density) > max_particles:
                 return cubes[:-1]
         attempts += 1
-        if attempts > 1000000:
+        if attempts > 10000000:
             print(f"Cannot find non-overlapping cubes in {attempts} attempts")
             raise Exception(f"Cannot find non-overlapping cubes in {attempts} attempts")
     return cubes
