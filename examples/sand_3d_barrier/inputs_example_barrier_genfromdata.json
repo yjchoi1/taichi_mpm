@@ -1,0 +1,173 @@
+{
+    "save_path": "examples/sand_3d_barrier/",
+    "id_range": [
+        1,
+        3
+    ],
+    "domain_size": 2.0,
+    "friction_angle": 35,
+    "wall_friction": 0.43,
+    "elastic_modulus": 2000000.0,
+    "poisson_ratio": 0.3,
+    "rho": 1800,
+    "sim_space": [
+        [
+            0.1,
+            1.9
+        ],
+        [
+            0.1,
+            0.9
+        ],
+        [
+            0.1,
+            0.9
+        ]
+    ],
+    "sim_resolution": [
+        64,
+        64,
+        64
+    ],
+    "nsteps": 350,
+    "mpm_dt": 0.0025,
+    "gravity": [
+        0,
+        -9.81,
+        0
+    ],
+    "gen_cube_randomly": {
+        "generate": false
+    },
+    "gen_cube_from_data": {
+        "generate": true,
+        "sim_inputs": [
+            {
+                "id": 1,
+                "mass": {
+                    "cubes": [
+                        [
+                            0.45,
+                            0.125,
+                            0.2,
+                            0.3,
+                            0.2,
+                            0.6
+                        ]
+                    ],
+                    "velocity_for_cubes": [
+                        [
+                            2.5,
+                            0.0,
+                            0.0
+                        ]
+                    ]
+                },
+                "obstacles": {
+                    "cubes": [
+                        [
+                            0.8,
+                            0.1,
+                            0.25,
+                            0.1,
+                            0.25,
+                            0.1
+                        ],
+                        [
+                            0.8,
+                            0.1,
+                            0.6,
+                            0.1,
+                            0.25,
+                            0.1
+                        ]
+                    ],
+                    "velocity_for_cubes": [
+                        [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    ]
+                }
+            },
+            {
+                "id": 2,
+                "mass": {
+                    "cubes": [
+                        [
+                            0.35,
+                            0.15,
+                            0.2,
+                            0.35,
+                            0.25,
+                            0.6
+                        ]
+                    ],
+                    "velocity_for_cubes": [
+                        [
+                            2.5,
+                            0.0,
+                            0.0
+                        ]
+                    ]
+                },
+                "obstacles": {
+                    "cubes": [
+                        [
+                            0.75,
+                            0.1,
+                            0.2,
+                            0.1,
+                            0.3,
+                            0.1
+                        ],
+                        [
+                            0.75,
+                            0.1,
+                            0.7,
+                            0.1,
+                            0.3,
+                            0.1
+                        ],
+                        [
+                            1.0,
+                            0.1,
+                            0.45,
+                            0.1,
+                            0.3,
+                            0.1
+                        ]
+                    ],
+                    "velocity_for_cubes": [
+                        [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    ]
+                }
+            }
+        ]
+    },
+    "visualization": {
+        "is_realtime_vis": true,
+        "is_save_animation": true,
+        "skip": 1
+    }
+}

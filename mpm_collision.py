@@ -25,7 +25,6 @@ def run_collision(i, inputs):
     # visualization & simulation inputs
     is_realtime_vis = inputs["visualization"]["is_realtime_vis"]
     save_path = inputs["save_path"]
-    ndim = len(sim_space)
 
     # init visualizer
     if is_realtime_vis:
@@ -46,7 +45,9 @@ def run_collision(i, inputs):
 
     # Gen cubes from data
     if inputs["gen_cube_from_data"]["generate"]:
-        sim_input = inputs["gen_cube_from_data"]["sim_inputs"][i]
+        # Start from the id specified in input data
+        sim_input = next(item for item in inputs["gen_cube_from_data"]["sim_inputs"] if item["id"] == i)
+        # sim_input = inputs["gen_cube_from_data"]["sim_inputs"][i]
         if len(inputs["gen_cube_from_data"]["sim_inputs"]) != \
                 len(range(inputs["id_range"][0], inputs["id_range"][1])):
             raise NotImplemented(f"Length of `sim_inputs` should match the length of `id_range`")
@@ -215,19 +216,20 @@ def run_collision(i, inputs):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--input_file', default="inputs.json", type=str, help="Input json file name")
+    parser.add_argument('--input_path', default="examples/sand_3d_barrier/inputs_example_barrier_randomgen.json", type=str, help="Input json file name")
     args = parser.parse_args()
 
     # input
-    input_filename = args.input_file
+    input_path = args.input_path
     follow_taichi_coord = True
-    f = open(input_filename)
+    f = open(input_path)
     inputs = json.load(f)
     f.close()
 
     # save input file being used.
     if not os.path.exists(inputs['save_path']):
         os.makedirs(inputs['save_path'])
+    input_filename = input_path.rsplit('/', 1)[-1]
     with open(f"{inputs['save_path']}/{input_filename}", "w") as input_file:
         json.dump(inputs, input_file, indent=4)
 

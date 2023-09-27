@@ -57,7 +57,6 @@ specified domain, or can be placed manually.
                 "min_distance_between_cubes": 0.01,
                 "cube_size_range": [[0.1, 0.1], [0.3, 0.3], [0.1, 0.1]],
                 "cube_gen_space": [[1.0, 1.5], [0.10, 0.4], [0.15, 0.85]],
-                "vel_range": [-2.5, 2.5],
                 "nparticle_limits": 7000
             }
         }
@@ -113,11 +112,12 @@ animation for the simulation.
 
 ## Run
 ```shell
-python3 mpm_collision.py
+python3 mpm_collision.py  --input_path="examples/sand2d/inputs_2d.json"
 ```
 
 ## Simulation Example
 ![Sand collision example](example.gif)
+![Sand barrier interaction example](examples/sand_3d_barrier/trajectory1.gif)
 
 ## Note
 In taichi, coordinate y-axis corresponds to the height and y-axis corresponds 

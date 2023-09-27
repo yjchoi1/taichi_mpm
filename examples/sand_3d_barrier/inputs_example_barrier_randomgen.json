@@ -1,0 +1,128 @@
+{
+    "save_path": "examples/sand_3d_barrier/",
+    "id_range": [
+        0,
+        1
+    ],
+    "domain_size": 1.0,
+    "friction_angle": 35,
+    "wall_friction": 0.4,
+    "elastic_modulus": 2000000.0,
+    "poisson_ratio": 0.3,
+    "rho": 1800,
+    "sim_space": [
+        [
+            0.1,
+            0.9
+        ],
+        [
+            0.1,
+            0.9
+        ],
+        [
+            0.1,
+            0.9
+        ]
+    ],
+    "sim_resolution": [
+        32,
+        32,
+        32
+    ],
+    "nsteps": 350,
+    "mpm_dt": 0.0025,
+    "gravity": [
+        0,
+        -9.81,
+        0
+    ],
+    "gen_cube_randomly": {
+        "generate": true,
+        "sim_inputs": {
+            "mass": {
+                "ncubes": [
+                    1,
+                    2
+                ],
+                "min_distance_between_cubes": 0.01,
+                "cube_size_range": [
+                    0.2,
+                    0.39
+                ],
+                "cube_gen_space": [
+                    [
+                        0.11,
+                        0.5
+                    ],
+                    [
+                        0.11,
+                        0.89
+                    ],
+                    [
+                        0.11,
+                        0.89
+                    ]
+                ],
+                "vel_range": [
+                    [
+                        0.0,
+                        3.0
+                    ],
+                    [
+                        -0.5,
+                        0.5
+                    ],
+                    [
+                        -0.5,
+                        0.5
+                    ]
+                ],
+                "nparticle_limits": 15000
+            },
+            "obstacles": {
+                "ncubes": [
+                    1,
+                    2
+                ],
+                "min_distance_between_cubes": 0.01,
+                "cube_size_range": [
+                    [
+                        0.1,
+                        0.1
+                    ],
+                    [
+                        0.35,
+                        0.35
+                    ],
+                    [
+                        0.1,
+                        0.1
+                    ]
+                ],
+                "cube_gen_space": [
+                    [
+                        0.51,
+                        0.89
+                    ],
+                    [
+                        0.1,
+                        0.45
+                    ],
+                    [
+                        0.11,
+                        0.89
+                    ]
+                ],
+                "nparticle_limits": 7000
+            }
+        }
+    },
+    "gen_cube_from_data": {
+        "generate": false
+    },
+    "visualization": {
+        "is_realtime_vis": true,
+        "is_save_animation": true,
+        "skip": 1
+    }
+}

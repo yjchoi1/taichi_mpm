@@ -1,0 +1,146 @@
+{
+    "save_path": "examples/sand_3d_collision/",
+    "id_range": [
+        0,
+        10
+    ],
+    "domain_size": 1.0,
+    "friction_angle": 40,
+    "wall_friction": 0.5,
+    "elastic_modulus": 2000000.0,
+    "poisson_ratio": 0.3,
+    "rho": 1800,
+    "sim_space": [
+        [
+            0.2,
+            0.8
+        ],
+        [
+            0.2,
+            0.8
+        ],
+        [
+            0.2,
+            0.8
+        ]
+    ],
+    "sim_resolution": [
+        32,
+        32,
+        32
+    ],
+    "nsteps": 350,
+    "mpm_dt": 0.0025,
+    "gravity": [
+        0,
+        -9.81,
+        0
+    ],
+    "gen_cube_randomly": {
+        "generate": true,
+        "sim_inputs": {
+            "mass": {
+                "ncubes": [
+                    1,
+                    2
+                ],
+                "min_distance_between_cubes": 0.01,
+                "cube_size_range": [
+                    [
+                        0.15,
+                        0.4
+                    ],
+                    [
+                        0.15,
+                        0.4
+                    ],
+                    [
+                        0.15,
+                        0.4
+                    ]
+                ],
+                "vel_range": [
+                    [
+                        -2.5,
+                        2,
+                        5
+                    ],
+                    [
+                        -3,
+                        3
+                    ],
+                    [
+                        -1,
+                        1
+                    ]
+                ],
+                "cube_gen_space": [
+                    [
+                        0.21,
+                        0.79
+                    ],
+                    [
+                        0.21,
+                        0.79
+                    ],
+                    [
+                        0.21,
+                        0.79
+                    ]
+                ],
+                "nparticle_limits": 20000
+            }
+        }
+    },
+    "gen_cube_from_data": {
+        "generate": false,
+        "sim_inputs": [
+            {
+                "id": 0,
+                "mass": {
+                    "cubes": [
+                        [
+                            0.21,
+                            0.21,
+                            0.21,
+                            0.2,
+                            0.2,
+                            0.2
+                        ]
+                    ],
+                    "velocity_for_cubes": [
+                        [
+                            1.0,
+                            1.0,
+                            1.5
+                        ]
+                    ]
+                },
+                "obstacles": {
+                    "cubes": [
+                        [
+                            0.5,
+                            0.2,
+                            0.45,
+                            0.1,
+                            0.2,
+                            0.1
+                        ]
+                    ],
+                    "velocity_for_cubes": [
+                        [
+                            0.0,
+                            0.0,
+                            0.0
+                        ]
+                    ]
+                }
+            }
+        ]
+    },
+    "visualization": {
+        "is_realtime_vis": true,
+        "is_save_animation": true,
+        "skip": 1
+    }
+}
