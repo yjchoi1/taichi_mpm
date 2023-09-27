@@ -112,7 +112,7 @@ animation for the simulation.
 
 ## Run
 ```shell
-python3 mpm_collision.py  --input_path="examples/sand2d/inputs_2d.json"
+python3 run_mpm.py  --input_path="examples/sand2d/inputs_2d.json"
 ```
 
 ## Simulation Example
