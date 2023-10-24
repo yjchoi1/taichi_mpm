@@ -74,7 +74,28 @@
         }
     },
     "gen_cube_from_data": {
-        "generate": false
+        "generate": false,
+        "sim_inputs": [
+            {
+                "id": 0,
+                "mass": {
+                    "cubes": [
+                        [
+                            0.2,
+                            0.2,
+                            0.3,
+                            0.3
+                        ]
+                    ],
+                    "velocity_for_cubes": [
+                        [
+                            1.0,
+                            1.0
+                        ]
+                    ]
+                }
+            }
+        ]
     },
     "visualization": {
         "is_realtime_vis": true,

@@ -2,14 +2,11 @@ import numpy as np
 import random
 from matplotlib import pyplot as plt
 from matplotlib import animation
-import matplotlib.colors as colors
-
-
-from typing import List, Tuple
-
-
 import random
-from typing import List, Tuple
+import pandas as pd
+from typing import Union
+
+import engine.mpm_solver
 
 
 def generate_random_cube(
@@ -88,7 +85,9 @@ def generate_cubes(n,
         attempts += 1
         if attempts > 10000000:
             print(f"Cannot find non-overlapping cubes in {attempts} attempts")
-            raise Exception(f"Cannot find non-overlapping cubes in {attempts} attempts")
+    if len(cubes) == 0:
+        raise Exception(
+            f"The list `cubes` is empty meaning that fail to find non-overlapping cubes in {attempts} attempts")
     return cubes
 
 
@@ -208,3 +207,39 @@ def animation_from_npz(
 
     ani.save(f'{path}/{save_name}.gif', dpi=100, fps=30, writer='imagemagick')
     print(f"Animation saved to: {path}/{save_name}.gif")
+
+def add_material_points(
+        mpm_solver: engine.mpm_solver.MPMSolver,
+        ndim,
+        particles_to_add: Union[str, list],
+        material: int,
+        velocity: list
+):
+    # generate cube-shaped particles from the list defining the cube shape,
+    #   e.g., for 2d case, cube = [x_min, y_min, len_x, len_y]
+    if type(particles_to_add) is list or type(particles_to_add) is tuple:
+        mpm_solver.add_cube(
+            lower_corner=[
+                particles_to_add[0], particles_to_add[1], particles_to_add[2]] if ndim == 3 else [particles_to_add[0], particles_to_add[1]],
+            cube_size=[
+                particles_to_add[3], particles_to_add[4], particles_to_add[5]] if ndim == 3 else [particles_to_add[2], particles_to_add[3]],
+            material=material,
+            velocity=velocity)
+    # generate particles from user defined csv files containing particle coordinate
+    elif type(particles_to_add) is str:
+        particle_coords = read_particles(particles_to_add)
+        if particle_coords.shape[-1] != ndim:
+            raise ValueError(
+                f"Particle file is {particle_coords.shape[-1]}d data, but sim space is {ndim}d")
+        mpm_solver.add_particles(
+            particles=particle_coords,
+            material=material,
+            velocity=velocity
+        )
+    else:
+        raise ValueError("Wrong input type for particle gen")
+
+
+def read_particles(path):
+    df = pd.read_csv(path, header=1)
+    return df.to_numpy()

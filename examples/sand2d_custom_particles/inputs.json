@@ -1,0 +1,72 @@
+{
+    "save_path": "examples/sand2d_custom_particles/",
+    "id_range": [
+        0,
+        1
+    ],
+    "domain_size": 1.0,
+    "friction_angle": 40,
+    "wall_friction": 0.5,
+    "elastic_modulus": 2000000.0,
+    "poisson_ratio": 0.3,
+    "rho": 1800,
+    "sim_space": [
+        [
+            0.1,
+            0.9
+        ],
+        [
+            0.1,
+            0.9
+        ]
+    ],
+    "sim_resolution": [
+        64,
+        64
+    ],
+    "nsteps": 350,
+    "mpm_dt": 0.0025,
+    "gravity": [
+        0,
+        -9.81
+    ],
+    "gen_cube_randomly": {
+        "generate": false
+    },
+    "gen_cube_from_data": {
+        "generate": true,
+        "sim_inputs": [
+            {
+                "id": 0,
+                "mass": {
+                    "cubes": [
+                        "particles.csv",
+                        [
+                            0.5,
+                            0.5,
+                            0.5,
+                            0.3,
+                            0.3,
+                            0.3
+                        ]
+                    ],
+                    "velocity_for_cubes": [
+                        [
+                            1.0,
+                            1.0
+                        ],
+                        [
+                            -1.0,
+                            -1.0
+                        ]
+                    ]
+                }
+            }
+        ]
+    },
+    "visualization": {
+        "is_realtime_vis": true,
+        "is_save_animation": true,
+        "skip": 1
+    }
+}
