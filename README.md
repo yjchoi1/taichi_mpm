@@ -6,7 +6,7 @@ Simulating sand mass collision using
 Using `input.json` file, granular mass can either be generated randomly in a 
 specified domain, or can be placed manually.
 
-```shell
+```json
 {
     "save_path": "./sand3d_collision/",
     "id_range": [  # the id of simulations to generate
@@ -74,13 +74,20 @@ specified domain, or can be placed manually.
                             0.2,  # z corner
                             0.2,  # x length
                             0.3,  # y length
-                            0.4   # z length                        
+                            0.4   # z length 
+                        ],
+                        "parcitles.csv"  # custom particle data
                     ],
                     "velocity_for_cubes": [
                         [
                             1.0,  # x vel
                             1.0,  # y vel
                             1.5   # z vel
+                        ],
+                        [
+                             1.0, 
+                             0.0,
+                             -0.5   
                         ]
                     ]
                 },
@@ -104,6 +111,17 @@ if `cube_size_range` is defined for all dimensions (e.g., `[[0.15, 0.3], [0.15, 
 the shape of cubes will be randomly generated following the specified values.
 If `cube_size_range` is only defined for one dimension (e.g., `[0.1, 0.4]`), 
 the shape of cubes will be square whose length if random from `[0.1, 0.4]`
+
+#### Generate particles from user defined particle files
+Simply append the file name to the `gen_cube_from_data["sim_inputs"]["mass"]["cubes"]` list.
+The file format is as follows.
+```shell
+x, y
+0.143, 0.123
+0.243, 0.523
+0.343, 0.423
+...
+```
 
 
 ## Output

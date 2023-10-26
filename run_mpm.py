@@ -102,14 +102,23 @@ def run_collision(i, inputs):
         else:
             obstacles = None
     else:
-        raise ValueError
+        raise ValueError("Check `generate` option. It should be either true or false")
 
-    # TODO: need to overlap check between `cubes` and `obstacles`.
+    # TODO: need overlap check between `cubes` and `obstacles`.
 
     for idx, cube in enumerate(cubes):
-        mpm.add_cube(
-            lower_corner=[cube[0], cube[1], cube[2]] if ndim == 3 else [cube[0], cube[1]],
-            cube_size=[cube[3], cube[4], cube[5]] if ndim == 3 else [cube[2], cube[3]],
+        if type(cube) is list or type(cube) is tuple:
+            particles_to_add = cube
+        elif type(cube) is str:
+            particle_file_name = cube
+            particles_to_add = os.path.join(save_path, particle_file_name)
+        else:
+            raise ValueError("Wrong input type for particle gen")
+
+        utils.add_material_points(
+            mpm_solver=mpm,
+            ndim=ndim,
+            particles_to_add=particles_to_add,
             material=MPMSolver.material_sand,
             velocity=velocity_for_cubes[idx])
 
@@ -119,9 +128,18 @@ def run_collision(i, inputs):
 
     if obstacles is not None:
         for idx, cube in enumerate(obstacles):
-            mpm.add_cube(
-                lower_corner=[cube[0], cube[1], cube[2]] if ndim == 3 else [cube[0], cube[1]],
-                cube_size=[cube[3], cube[4], cube[5]] if ndim == 3 else [cube[2], cube[3]],
+            if type(cube) is list or type(cube) is tuple:
+                particles_to_add = cube
+            elif type(cube) is str:
+                particle_file_name = cube
+                particles_to_add = os.path.join(save_path, particle_file_name)
+            else:
+                raise ValueError("Wrong input type for particle gen")
+
+            utils.add_material_points(
+                mpm_solver=mpm,
+                ndim=ndim,
+                particles_to_add=particles_to_add,
                 material=MPMSolver.material_stationary,
                 velocity=[0, 0, 0] if ndim == 3 else [0, 0])
 
@@ -131,6 +149,7 @@ def run_collision(i, inputs):
 
     nparticles = len(mpm.particle_info()["position"])
 
+    # Set frictional wall boundaries
     if ndim == 3:
         mpm.add_surface_collider(point=(sim_space[0][0], 0.0, 0.0), normal=(1.0, 0.0, 0.0), friction=inputs["wall_friction"])
         mpm.add_surface_collider(point=(sim_space[0][1], 0.0, 0.0), normal=(-1.0, 0.0, 0.0), friction=inputs["wall_friction"])
@@ -216,7 +235,7 @@ def run_collision(i, inputs):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--input_path', default="examples/sand_3d_barrier/inputs_example_barrier_randomgen.json", type=str, help="Input json file name")
+    parser.add_argument('--input_path', default="examples/sand_3d_barrier/inputs_example_barrier_genfromdata.json", type=str, help="Input json file name")
     args = parser.parse_args()
 
     # input
