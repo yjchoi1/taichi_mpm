@@ -84,7 +84,7 @@ def generate_cubes(n,
                 return cubes[:-1]
         attempts += 1
         if attempts > 10000000:
-            print(f"Cannot find non-overlapping cubes in {attempts} attempts")
+            raise Exception(f"Cannot find non-overlapping cubes in {attempts} attempts")
     if len(cubes) == 0:
         raise Exception(
             f"The list `cubes` is empty meaning that fail to find non-overlapping cubes in {attempts} attempts")
