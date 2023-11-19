@@ -76,18 +76,30 @@ def generate_cubes(n,
     """
     cubes = []
     attempts = 0
+    resets = 0
+    max_resets = 10000000  # You can adjust this limit as needed.
+
     while len(cubes) < n:
         new_cube = generate_random_cube(space_size, cube_size_range)
-        if not any(check_overlap(new_cube, cube, min_distance_between_cubes=min_distance_between_cubes) for cube in cubes):
-            cubes.append(new_cube)
-            if calculate_particles(cubes, density) > max_particles:
-                return cubes[:-1]
+
+        # Check for overlap with existing cubes
+        if any(check_overlap(new_cube, cube, min_distance_between_cubes=min_distance_between_cubes) for cube in cubes):
+            # If there is an overlap, clear the cubes and count a reset.
+            cubes.clear()
+            resets += 1
+            if resets > max_resets:
+                raise Exception(f"Too many resets ({resets}), unable to place non-overlapping cubes.")
+            # Continue to the next iteration, starting the process over.
+            continue
+
+        cubes.append(new_cube)
+        if calculate_particles(cubes, density) > max_particles:
+            return cubes[:-1]
+
         attempts += 1
         if attempts > 10000000:
             raise Exception(f"Cannot find non-overlapping cubes in {attempts} attempts")
-    if len(cubes) == 0:
-        raise Exception(
-            f"The list `cubes` is empty meaning that fail to find non-overlapping cubes in {attempts} attempts")
+
     return cubes
 
 
