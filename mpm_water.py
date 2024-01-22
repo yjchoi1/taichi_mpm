@@ -27,6 +27,7 @@ gui = ti.GUI("Taichi Elements", res=res, background_color=0x112F41)
 ti.init(arch=ti.cuda, device_memory_GB=3.4)
 mpm = MPMSolver(inputs=inputs_for_sand, res=sim_resolution, size=domain_size, unbounded=True)
 mpm.add_surface_collider(point=(sim_space[0][0], 0.0), normal=(1.0, 0.0, ), friction=inputs_for_sand["wall_friction"])
+mpm.add_surface_collider(point=(sim_space[0][1], 0.0), normal=(-1.0, 0.0), friction=inputs_for_sand["wall_friction"])
 mpm.add_surface_collider(point=(0.0, sim_space[1][0]), normal=(0.0, 1.0), friction=inputs_for_sand["wall_friction"])
 mpm.add_surface_collider(point=(0.0, sim_space[1][1]), normal=(0.0, -1.0), friction=inputs_for_sand["wall_friction"])
 
@@ -39,7 +40,7 @@ mpm.add_cube(
 
 mpm.add_cube(
     lower_corner=[0.1, 0.1],
-    cube_size=[1.0, 0.3],
+    cube_size=[0.8, 0.3],
     material=MPMSolver.material_water)
 
 for frame in tqdm(range(nsteps)):
