@@ -206,7 +206,7 @@ def run_collision(i, inputs):
         particle_types = particle_type_soil
     trajectories[f"trajectory{i}"] = (
         positions,  # position sequence (timesteps, particles, dims)
-        particle_types)  # particle type (particles, )
+        particle_types.astype(np.int32))  # particle type (particles, )
     np.savez_compressed(f"{save_path}/trajectory{i}", **trajectories)
     print(f"Trajectory {i} has {positions.shape[1]} particles")
     print(f"Output written to: {save_path}/trajectory{i}")
