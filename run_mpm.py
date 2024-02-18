@@ -244,7 +244,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--input_path', default="/work2/08264/baagee/frontera/gns-mpm-data/mpm/sand3d_frictions/inputs_drops_phi25.json", type=str, help="Input json file name")
-    parser.add_argument('--material_feature', default=True, type=bool, help="Whether to add material property to node feature")
+    parser.add_argument('--material_feature', default=False, type=bool, help="Whether to add material property to node feature")
     args = parser.parse_args()
 
     # input
