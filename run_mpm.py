@@ -200,13 +200,21 @@ def run_collision(i, inputs):
         os.makedirs(save_path)
 
     trajectories = {}
+    material_feature = np.full(n_soil_particles,
+        np.tan(inputs["friction_angle"] * np.pi / 180).astype(np.float32))
     if obstacles is not None:
         particle_types = np.concatenate((particle_type_soil, particle_type_obstacle))
     else:
         particle_types = particle_type_soil
-    trajectories[f"trajectory{i}"] = (
-        positions,  # position sequence (timesteps, particles, dims)
-        particle_types.astype(np.int32))  # particle type (particles, )
+    if args.material_feature:
+        trajectories[f"trajectory{i}"] = (
+            positions,  # position sequence (timesteps, particles, dims)
+            particle_types.astype(np.int32), # particle type (particles, )
+            material_feature) # particle type (particles, )
+    else:
+        trajectories[f"trajectory{i}"] = (
+            positions,  # position sequence (timesteps, particles, dims)
+            particle_types.astype(np.int32))  # particle type (particles, )
     np.savez_compressed(f"{save_path}/trajectory{i}", **trajectories)
     print(f"Trajectory {i} has {positions.shape[1]} particles")
     print(f"Output written to: {save_path}/trajectory{i}")
@@ -235,7 +243,8 @@ def run_collision(i, inputs):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--input_path', default="examples/sand_3d_barrier/inputs_example_barrier_genfromdata.json", type=str, help="Input json file name")
+    parser.add_argument('--input_path', default="/work2/08264/baagee/frontera/gns-mpm-data/mpm/sand3d_frictions/inputs_drops_phi25.json", type=str, help="Input json file name")
+    parser.add_argument('--material_feature', default=True, type=bool, help="Whether to add material property to node feature")
     args = parser.parse_args()
 
     # input
