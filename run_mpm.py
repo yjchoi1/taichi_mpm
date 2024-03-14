@@ -200,8 +200,10 @@ def run_collision(i, inputs):
         os.makedirs(save_path)
 
     trajectories = {}
-    material_feature = np.full(n_soil_particles,
-        np.tan(inputs["friction_angle"] * np.pi / 180).astype(np.float32))
+    # material_feature = np.full(n_soil_particles,
+    #     np.tan(inputs["friction_angle"] * np.pi / 180).astype(np.float32))
+    material_feature = np.vstack((np.full(n_soil_particles, np.tan(inputs["friction_angle"] * np.pi / 180).astype(np.float32)),
+     np.full(n_soil_particles, inputs["elastic_modulus"]/100000000))).reshape(n_soil_particles,-1)
     if obstacles is not None:
         particle_types = np.concatenate((particle_type_soil, particle_type_obstacle))
     else:
