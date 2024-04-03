@@ -245,7 +245,7 @@ def run_collision(i, inputs):
                 n_soil_particles, np.tan(inputs["friction_angle"] * np.pi / 180).astype(np.float32))
 
         trajectories[f"trajectory{i}"] = (
-            positions[:downsample_rate],  # position sequence (timesteps, particles, dims)
+            positions[::downsample_rate],  # position sequence (timesteps, particles, dims)
             particle_types.astype(np.int32),  # particle type (particles, )
             material_feature)  # particle type (particles, n_features)
 
@@ -284,7 +284,7 @@ def run_collision(i, inputs):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--input_path', default="examples/cube_collapse/cube_example_inputs.json", type=str, help="Input json file name")
+    parser.add_argument('--input_path', default="temp_mpm_input.json", type=str, help="Input json file name")
     parser.add_argument('--material_feature', default=False, type=bool, help="Whether to add material property to node feature")
     args = parser.parse_args()
 
