@@ -23,11 +23,6 @@ def run_collision(i, inputs):
     mpm_dt = inputs["mpm_dt"]
     gravity = inputs["gravity"]
     elastic_modulus = inputs["elastic_modulus"]
-    print(f"Elastic modulus used is: {elastic_modulus/1000000} million")
-    if "downsample_rate" in inputs.keys():
-        downsample_rate = inputs["downsample_rate"]
-    else:
-        downsample_rate = 1
     # visualization & simulation inputs
     is_realtime_vis = inputs["visualization"]["is_realtime_vis"]
     save_path = inputs["save_path"]
@@ -193,49 +188,75 @@ def run_collision(i, inputs):
                             radius=1.5,
                             color=colors[particles['material']])
     positions = np.stack(positions)
-    positions = positions[::downsample_rate]
-    assert len(positions) == nsteps/downsample_rate, "Error in downsampling: shape mismatch."
-
 
     # Change axis of positions (y & z), since the render in matplotlib uses the opposite axis order
     if ndim == 3 and follow_taichi_coord == False:
         positions = positions[:, :, [0, 2, 1]]
 
-    # Save as npz
+    # Output
     # TODO (yc):
-    #  Add a feature that only samples the particles on the perimeter of obstacle when saving npz
+    #  Add a feature that only samples the partcles on the perimeter of obstacle when saving npz
     if not os.path.exists(save_path):
         os.makedirs(save_path)
 
+    if "output_format" in inputs:
+        if "timestep_downsampling_rate" in inputs["output_format"]:
+            downsample_rate = inputs["output_format"]["timestep_downsampling_rate"]
+        else:
+            downsample_rate = 1
+    else:
+        downsample_rate = 1
+
     trajectories = {}
 
-    #Define cases for the material property returned.
-    #If user specifies property as argument, then it is returned, in 1D format.
-    #Else, the 2D property is returned as default flag "both".
-    #This is done in the input json file.
-    if inputs["material_property"] == "friction_angle":
-        material_feature = np.full(n_soil_particles,
-        np.tan(inputs["friction_angle"] * np.pi / 180).astype(np.float32))
-    elif inputs["material_property"] == "elastic_modulus":
-        material_feature = np.full(n_soil_particles,
-        np.tan(inputs["elastic_modulus"]/1e8).astype(np.float32))
-    else:
-        material_feature = np.vstack((np.full(n_soil_particles, np.tan(inputs["friction_angle"] * np.pi / 180).astype(np.float32)),
-        np.full(n_soil_particles, inputs["elastic_modulus"]/100000000))).reshape(n_soil_particles,-1)
+    # Make particle type feature
     if obstacles is not None:
         particle_types = np.concatenate((particle_type_soil, particle_type_obstacle))
     else:
         particle_types = particle_type_soil
+
+    # Make material feature
     if args.material_feature:
+        material_feature_list = []
+
+        if "output_format" in inputs:  # Read from input files
+            if "friction_angle" in inputs["output_format"]["material_feature"]:
+                # make friction angle feature. We normalize friction angle by tan(phi), where phi is friction angle in deg
+                friction_feature = np.full(
+                    n_soil_particles, np.tan(inputs["friction_angle"] * np.pi / 180).astype(np.float32))
+                material_feature_list.append(friction_feature)
+
+            if "elastic_modulus" in inputs["output_format"]["material_feature"]:
+                normalization_factor = 1e8  # hardcode normalization factor
+                modulus_feature = np.full(
+                    n_soil_particles, inputs["elastic_modulus"] / normalization_factor).astype(np.float32)
+                material_feature_list.append(modulus_feature)
+
+            # Collect features if any
+            if material_feature_list:
+                material_feature = np.vstack(
+                    material_feature_list).T  # Transpose to get correct shape (n_soil_particles, -1)
+            else:
+                raise ValueError("`material_feature` is specified, but no material features are collected")
+
+        else:  # Just use friction angle
+            # make friction angle feature. We normalize friction angle by tan(phi), where phi is friction angle in deg
+            material_feature = np.full(
+                n_soil_particles, np.tan(inputs["friction_angle"] * np.pi / 180).astype(np.float32))
+
         trajectories[f"trajectory{i}"] = (
-            positions,  # position sequence (timesteps, particles, dims)
-            particle_types.astype(np.int32), # particle type (particles, )
-            material_feature) # particle type (particles, )
+            positions[:downsample_rate],  # position sequence (timesteps, particles, dims)
+            particle_types.astype(np.int32),  # particle type (particles, )
+            material_feature)  # particle type (particles, n_features)
+
+    # If material_feature is False
     else:
         trajectories[f"trajectory{i}"] = (
-            positions,  # position sequence (timesteps, particles, dims)
+            positions[::downsample_rate],  # position sequence (timesteps, particles, dims)
             particle_types.astype(np.int32))  # particle type (particles, )
-    np.savez_compressed(f"{save_path}/trajectory{i}_{elastic_modulus/1000000}", **trajectories)
+
+    # Save npz
+    np.savez_compressed(f"{save_path}/trajectory{i}", **trajectories)
     print(f"Trajectory {i} has {positions.shape[1]} particles")
     print(f"Output written to: {save_path}/trajectory{i}")
 
@@ -243,8 +264,8 @@ def run_collision(i, inputs):
     if inputs["visualization"]["is_save_animation"]:
         if i % inputs["visualization"]["skip"] == 0:
             utils.animation_from_npz(path=save_path,
-                                     npz_name=f"trajectory{i}_{elastic_modulus/1000000}",
-                                     save_name=f"trajectory{i}_{elastic_modulus/1000000}",
+                                     npz_name=f"trajectory{i}",
+                                     save_name=f"trajectory{i}",
                                      boundaries=sim_space,
                                      timestep_stride=5,
                                      follow_taichi_coord=follow_taichi_coord)
@@ -263,7 +284,7 @@ def run_collision(i, inputs):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--input_path', default="/work2/08264/baagee/frontera/gns-mpm-data/mpm/sand3d_frictions/inputs_drops_phi25.json", type=str, help="Input json file name")
+    parser.add_argument('--input_path', default="examples/cube_collapse/cube_example_inputs.json", type=str, help="Input json file name")
     parser.add_argument('--material_feature', default=False, type=bool, help="Whether to add material property to node feature")
     args = parser.parse_args()
 

@@ -9,6 +9,13 @@ specified domain, or can be placed manually.
 ```json
 {
     "save_path": "./sand3d_collision/",
+      "output_format": {  # Optional
+        "timestep_downsampling_rate": 2,  # Downsample timestep, else, default is set to 1.0
+        "material_feature": [  # Choose what material feature to include in the input npz
+            "friction_angle",
+            "elastic_modulus"
+        ]
+    },
     "id_range": [  # the id of simulations to generate
         0,
         10

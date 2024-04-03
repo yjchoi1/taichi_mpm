@@ -1,10 +1,16 @@
 {
     "save_path": "examples/cube_collapse",
+    "output_format": {
+        "timestep_downsampling_rate": 2,
+        "material_feature": [
+            "friction_angle",
+            "elastic_modulus"
+        ]
+    },
     "id_range": [
         0,
         1
     ],
-    "material_property":"both",
     "domain_size": 1.0,
     "friction_angle": 40,
     "wall_friction": 0.5,
@@ -30,9 +36,8 @@
         32,
         32
     ],
-    "nsteps": 3500,
-    "mpm_dt": 0.00025,
-    "downsample_rate": 2,
+    "nsteps": 300,
+    "mpm_dt": 0.0025,
     "gravity": [
         0,
         -9.81,
