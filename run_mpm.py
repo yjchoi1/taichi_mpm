@@ -255,8 +255,13 @@ def run_collision(i, inputs):
             positions[::downsample_rate],  # position sequence (timesteps, particles, dims)
             particle_types.astype(np.int32))  # particle type (particles, )
 
+    # Create structured array to hold the data
+    structured_data = np.empty(len(trajectories), dtype=object)
+    for j, value in enumerate(trajectories.values()):
+        structured_data[j] = value
+
     # Save npz
-    np.savez_compressed(f"{save_path}/trajectory{i}", **trajectories)
+    np.savez_compressed(f"{save_path}/trajectory{i}.npz", gns_data=structured_data)
     print(f"Trajectory {i} has {positions.shape[1]} particles")
     print(f"Output written to: {save_path}/trajectory{i}")
 
@@ -284,7 +289,7 @@ def run_collision(i, inputs):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--input_path', default="temp_mpm_input.json", type=str, help="Input json file name")
+    parser.add_argument('--input_path', default="inputs_example.json", type=str, help="Input json file name")
     parser.add_argument('--material_feature', default=False, type=bool, help="Whether to add material property to node feature")
     args = parser.parse_args()
 

@@ -5,9 +5,30 @@ from matplotlib import animation
 import random
 import pandas as pd
 from typing import Union
-
+import h5py
 import engine.mpm_solver
 
+
+def load_data(path):
+    """Load data stored in npz or h5 format."""
+    if path.endswith(".npz"):
+        with np.load(path, allow_pickle=True) as data_file:
+            if "gns_data" in data_file:
+                data = data_file["gns_data"]
+            else:
+                data = [item for _, item in data_file.items()]
+    elif path.endswith(".h5"):
+        with h5py.File(path, "r") as data_file:
+            data = []
+            for key in data_file.keys():
+                trajectory = data_file[key]
+                positions = trajectory["positions"][()]
+                particle_type = trajectory["particle_type"][()]
+                material_property = trajectory["material_property"][()]
+                data.append((positions, particle_type, material_property))
+    else:
+        raise ValueError("Unsupported file format. Use .npz or .h5 files.")
+    return data
 
 def generate_random_cube(
         space_size,
@@ -123,9 +144,9 @@ def animation_from_npz(
         colorful=True,
         follow_taichi_coord=False):
 
-    data = dict(np.load(f"{path}/{npz_name}.npz", allow_pickle=True))
-    for i, (sim, info) in enumerate(data.items()):
-        positions = info[0]
+    # data = dict(np.load(f"{path}/{npz_name}.npz", allow_pickle=True))
+    data = load_data(f"{path}/{npz_name}.npz")
+    positions = data[0][0]
     ndim = positions.shape[-1]
 
     # compute vel magnitude for color bar
